@@ -1,7 +1,7 @@
 #' @rdname plot
 #' @aliases plot.cj_mm plot.cj_amce plot.cj_freqs
 #' @title Plot AMCE estimates, MM descriptives, and frequency plots
-#' @description ggplot2-based plotting of conjoint AMCEs estimates and MMs
+#' @description ggplot2-based plotting of conjoint AMCEs estimates and MMs, and differences
 #' @param x A data frame returned from \code{\link{cj}} or \code{\link{mm}}.
 #' @param group Optionally a character string specifying a grouping factor. This is useful when, for example, subgroup analyses or comparing AMCEs for different outcomes. An alternative is to use \code{\link[ggplot2]{facet_wrap}} for faceted graphics.
 #' @param feature_headers A logical indicating whether to include headers for each feature to visually separate levels for each feature (beyond the color palette).
@@ -17,10 +17,15 @@
 #' @param theme A ggplot2 theme object
 #' @param \dots Ignored.
 #' @return A ggplot2 object
+#' @details These are convenience functions for quickly plotting results from cregg. Because \code{plot} returns ggplot2 objects, these are easily manipulated using standard ggplot2 operations.
+#' 
+#' Note that ggplot2, by default, sorts factors (like feature names here) in what might be the opposite order of what you would expect and in the opposite order that cregg functions sort their output.
 #' @examples
 #' \donttest{
+#' require("ggplot2")
 #' # load data
 #' data("immigration")
+#' immigration$contest_no <- factor(immigration$contest_no)
 #' 
 #' # calculate MMs
 #' d1 <- mm(immigration, ChosenImmigrant ~ Gender + Education + 
@@ -29,7 +34,20 @@
 #' 
 #' # plot MMs
 #' ## simple plot
-#' plot(d1)
+#' (p <- plot(d1, vline = 0.5))
+#'
+#' ## gridlines to aid interpretation
+#' p + ggplot2::theme_grey()
+#'
+#' ## monochrome bars
+#' p + scale_color_manual(values = rep("black", 9))
+#'
+#' ## plot with estimates shown as text labels
+#' p + ggplot2::geom_text(
+#'   aes(label = sprintf("%0.2f (%0.2f)", estimate, std.error)),
+#'   colour = "black", position = position_nudge(y = .5)
+#' )
+#' 
 #' ## plot with facetting by feature
 #' plot(d1, feature_headers = FALSE) + 
 #'   ggplot2::facet_wrap(~feature, ncol = 1L, 
@@ -40,15 +58,23 @@
 #'               Education + LanguageSkills + CountryOfOrigin + Job + JobExperience + 
 #'               JobPlans + ReasonForApplication + PriorEntry, id = ~ CaseID,
 #'               estimate = "mm", by = ~ contest_no)
-#' 
+#'
 #' ## plot with grouping
 #' plot(stacked, group = "contest_no", feature_headers = FALSE)
 #' 
 #' ## plot with facetting
 #' plot(stacked) + ggplot2::facet_wrap(~contest_no, nrow = 1L)
 #' 
+#' ## plot with shapes instead of colors for groups
+#' plot(stacked, group = "contest_no", vline = 0.5) + 
+#'  aes(shape = contest_no) + # map group to `shape` aesthetic
+#'  scale_shape_manual(values=c(1, 2, 3, 4, 5)) +
+#'  scale_colour_manual(values=rep("black", 5)) 
+#' 
 #' # estimate AMCEs over different subsets of data
-#' reasons12 <- subset(immigration, ReasonForApplication %in% levels(ReasonForApplication)[1:2])
+#' reasons12 <- subset(
+#'   immigration, ReasonForApplication %in% levels(ReasonForApplication)[1:2]
+#' )
 #' d2_1 <- cj(immigration, ChosenImmigrant ~ CountryOfOrigin, id = ~ CaseID)
 #' d2_2 <- cj(reasons12, ChosenImmigrant ~ CountryOfOrigin, id = ~ CaseID,
 #'            feature_labels = list(CountryOfOrigin = "Country Of Origin"))
@@ -100,6 +126,9 @@ function(
     if (is.null(group)) {
         p <- ggplot2::ggplot(data = x, ggplot2::aes_string(x = "estimate", y = "level", colour = "feature"))
     } else {
+        if (is.null(x[[group]])) {
+            stop(sprintf("`group` variable '%s' not found", group))
+        }
         p <- ggplot2::ggplot(data = x, ggplot2::aes_string(x = "estimate", y = "level", colour = group, group = group))
     }
     

@@ -7,11 +7,11 @@
 \format{A data frame (with additional \dQuote{cj_df} class) with 32000 observations on the following 13 variables. Each row corresponds to a single profile presented to a respondent.
  \describe{
    \item{\samp{chose_plan}}{A numeric vector denoting whether the immigrant profile was selected (=1) or not (=0).}
-   \item{\samp{taxrate1}}{An experimental factor with levels \dQuote{<10k: 0\%}, dQuote{<10k: 5\%}, dQuote{<10k: 15\%}, dQuote{<10k: 25\%}.}
-   \item{\samp{taxrate2}}{An experimental factor with levels \dQuote{10-35k: 5\%}, dQuote{10-35k: 15\%}, dQuote{10-35k: 25\%}, dQuote{10-35k: 35\%}.}
-   \item{\samp{taxrate3}}{An experimental factor with levels \dQuote{35-85k: 5\%}, dQuote{35-85k: 15\%}, dQuote{35-85k: 25\%}, dQuote{35-85k: 35\%}.}
-   \item{\samp{taxrate4}}{An experimental factor with levels \dQuote{85-175k: 5\%}, dQuote{85-175k: 15\%}, dQuote{85-175k: 25\%}, dQuote{85-175k: 35\%}.}
-   \item{\samp{taxrate5}}{An experimental factor with levels \dQuote{175-375k: 5\%}, dQuote{175-375k: 15\%}, dQuote{175-375k: 25\%}, dQuote{175-375k: 35\%}, dQuote{175-375k: 45\%}.}
+   \item{\samp{taxrate1}}{An experimental factor with levels \dQuote{<10k: 0\%}, \dQuote{<10k: 5\%}, \dQuote{<10k: 15\%}, \dQuote{<10k: 25\%}.}
+   \item{\samp{taxrate2}}{An experimental factor with levels \dQuote{10-35k: 5\%}, \dQuote{10-35k: 15\%}, \dQuote{10-35k: 25\%}, \dQuote{10-35k: 35\%}.}
+   \item{\samp{taxrate3}}{An experimental factor with levels \dQuote{35-85k: 5\%}, \dQuote{35-85k: 15\%}, \dQuote{35-85k: 25\%}, \dQuote{35-85k: 35\%}.}
+   \item{\samp{taxrate4}}{An experimental factor with levels \dQuote{85-175k: 5\%}, \dQuote{85-175k: 15\%}, \dQuote{85-175k: 25\%}, \dQuote{85-175k: 35\%}.}
+   \item{\samp{taxrate5}}{An experimental factor with levels \dQuote{175-375k: 5\%}, \dQuote{175-375k: 15\%}, \dQuote{175-375k: 25\%}, \dQuote{175-375k: 35\%}, \dQuote{175-375k: 45\%}.}
    \item{\samp{taxrate6}}{An experimental factor with levels \dQuote{>375k: 5\%}, \dQuote{>375k: 15\%}, \dQuote{>375k: 25\%}, \dQuote{>375k: 35\%}, \dQuote{>375k: 45\%}, \dQuote{>375k: 55\%}.}
    \item{\samp{taxrev}}{An experimental factor with levels \dQuote{<75\%}, \dQuote{75-95\%}, \dQuote{95-105\%}, \dQuote{105-125\%}, \dQuote{>125\%}.}
    \item{\samp{inequality_aversion}}{A covariate specifying whether respondent is inequality averse (=1) or not (=0).}
@@ -24,7 +24,7 @@
 Ballard-Rosa, Cameron, Lucy Martin, and Kenneth Scheve. 2016. \dQuote{The Structure of American Income Tax Policy Preferences.} \emph{The Journal of Politics} 79(1): 1-16. \url{http://doi.org/10.1086/687324}
 }
 \usage{
-taxes
+data(taxes)
 }
 \description{
 A dataset containing the results of a fully randomized conjoint survey of a representative sample of 2000 American adults who were asked to choose between alternative tax rate policies. Variables \samp{taxrate1}-\samp{taxrate6} refer to tax rates for different income brackets and \samp{taxrev} refers to levels of total tax revenue.

@@ -6,21 +6,35 @@
 \alias{cj_table}
 \title{Conjoint feature frequencies}
 \usage{
-cj_freqs(data, formula, id = NULL, weights = NULL, feature_order = NULL,
-  feature_labels = NULL, level_order = c("ascending", "descending"), ...)
+cj_freqs(
+  data,
+  formula,
+  id = NULL,
+  weights = NULL,
+  feature_order = NULL,
+  feature_labels = NULL,
+  level_order = c("ascending", "descending"),
+  ...
+)
 
 cj_props(data, formula, id, weights = NULL, margin = NULL, ...)
 
-cj_table(data, formula, feature_order = NULL, feature_labels = NULL,
-  level_order = c("ascending", "descending"), include_reference = FALSE,
-  ...)
+cj_table(
+  data,
+  formula,
+  feature_order = NULL,
+  feature_labels = NULL,
+  level_order = c("ascending", "descending"),
+  include_reference = FALSE,
+  ...
+)
 }
 \arguments{
-\item{data}{A data frame containing variables specified in \code{formula}. All RHS variables should be factors.}
+\item{data}{A data frame containing variables specified in \code{formula}. All RHS variables should be factors; all levels across features should be unique.}
 
-\item{formula}{An RHS formula specifying conjoint features to tabulate. All RHS variables should be factors.}
+\item{formula}{An RHS formula specifying conjoint features to tabulate. All RHS variables should be factors; all levels across features should be unique.}
 
-\item{id}{An RHS formula specifying a variable holding respondent identifiers, to be used for clustering standard errors.}
+\item{id}{An RHS formula specifying a variable holding respondent identifiers, to be used for clustering standard errors. By default, data are unclustered.}
 
 \item{weights}{An (optional) RHS formula specifying a variable holding survey weights.}
 
@@ -32,9 +46,12 @@ cj_table(data, formula, feature_order = NULL, feature_labels = NULL,
 
 \item{\dots}{Ignored.}
 
-\item{margin}{A numeric value passed to \code{\link[base]{prop.table}}. If \code{NULL} overall proportions are calculated.}
+\item{margin}{A numeric value passed to \code{prop.table}. If \code{NULL} overall proportions are calculated.}
 
 \item{include_reference}{A logical indicating whether to include a \dQuote{reference} column that indicates whether a feature level is the reference category for that feature. Default is \code{FALSE}.}
+}
+\value{
+A data frame of class \dQuote{cj_freqs}, \dQuote{cj_props}, etc.
 }
 \description{
 Tabulate and visualize conjoint features, and their display frequencies and proportions
@@ -51,7 +68,7 @@ cj_table(immigration, ~ Gender + Education + LanguageSkills)
 cj_table(immigration, ~ Gender + Education + LanguageSkills, include_ref = TRUE)
 
 # display frequencies
-cj_freqs(immigration, ~ Gender + Education + LanguageSkills, id = ~ CaseID)
+(f <- cj_freqs(immigration, ~ Gender + Education + LanguageSkills, id = ~ CaseID))
 
 # restrictions
 ## check display proportions
@@ -59,6 +76,17 @@ cj_props(immigration, ~ Job, id = ~ CaseID)
 ## check which combinations were not allowed
 subset(cj_props(immigration, ~ Job + Education, id = ~ CaseID), Proportion == 0)
 
+\donttest{
+# plotting
+(p <- plot(f))
+
+## change ggplot2 theme
+p + ggplot2::theme_bw()
+
+## monochrome bars
+p + ggplot2::scale_fill_manual(values = rep("black", 9)) + 
+  ggplot2::theme(legend.position = "none")
+}
 }
 \seealso{
 \code{\link{plot.cj_mm}}

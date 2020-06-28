@@ -5,14 +5,23 @@ function(
   data,
   formula,
   by,
-  id = NULL,
+  id = ~ 0,
   weights = NULL,
   feature_order = NULL,
   feature_labels = NULL,
   level_order = c("ascending", "descending"),
   alpha = 0.05,
+  h0 = 0,
   ...
 ) {
+    
+    # coerce to "cj_df" to preserve attributes
+    if (inherits(data, "survey.design")) {
+        stop("mm_diffs() does not currently support passing a 'survey.design' object as 'data'")
+        # data2 <- cj_df(data[["variables"]])
+    } else {
+        data2 <- cj_df(data)
+    }
     
     # get outcome variable
     outcome <- all.vars(stats::update(formula, . ~ 0))
@@ -27,11 +36,6 @@ function(
     stopifnot(length(by) == 2L)
     by_var <- as.character(by)[2L]
     
-    # coerce 'by_var' to factor
-    if (!is.factor(data[[by_var]])) {
-        data[[by_var]] <- factor(data[[by_var]])
-    }
-    
     # process feature_order argument
     feature_order <- check_feature_order(feature_order, RHS)
     
@@ -39,48 +43,36 @@ function(
     level_order <- match.arg(level_order)
     
     # function to produce "fancy" feature labels
-    feature_labels <- clean_feature_labels(data = data, RHS = RHS, feature_labels = feature_labels)
+    feature_labels <- clean_feature_labels(data = data2, RHS = RHS, feature_labels = feature_labels)
     
     # convert feature labels and levels to data frame
-    term_labels_df <- make_term_labels_df(data, feature_order, level_order = level_order)
+    term_labels_df <- make_term_labels_df(data2, feature_order, level_order = level_order)
     
     # estimate marginal means, by 'by_var'
     mm <- cj(data = data, formula = formula, estimate = "mm", id = id, weights = weights, by = by,
-             feature_order = feature_order, feature_labels = feature_labels, level_order = level_order, alpha = alpha, ...)
+             feature_order = feature_order, feature_labels = feature_labels, level_order = level_order, alpha = alpha, h0 = h0, ...)
     
     # split the output of 'mm' and order by factor levels
-    mm_split <- split(mm, mm[["BY"]])[levels(data[[by_var]])]
+    mm_split <- split(mm, mm[["BY"]])[levels(data2[[by_var]])]
     
     # loop over all levels, differencing against the first one
     for (i in seq_len(length(mm_split))[-1L]) {
-        # difference
-        ## temporarily preserve differences within the 'by' variable
-        this_level_diff <- 
-            mm_split[[i]][mm_split[[i]][["level"]] == levels(data[[by_var]])[i], "estimate"] - 
-            mm_split[[1L]][mm_split[[1L]][["level"]] == levels(data[[by_var]])[1L], "estimate"]
-        this_level_se <- 
-            sqrt(mm_split[[i]][mm_split[[i]][["level"]] == levels(data[[by_var]])[i], "std.error"]^2 + 
-                 mm_split[[1L]][mm_split[[1L]][["level"]] == levels(data[[by_var]])[1L], "std.error"]^2)
         
-        ## differences for all variables
+        # differences for all variables
         mm_split[[i]][["estimate"]] <- mm_split[[i]][["estimate"]] - mm_split[[1L]][["estimate"]]
         # SE of difference
         variance <- ((mm_split[[i]][["std.error"]]^2)) + ((mm_split[[1L]][["std.error"]]^2))
         mm_split[[i]][["std.error"]] <- sqrt( variance )
         
-        ## overwrite differences and SEs thereof for 'by' variable (given they aren't ordered correctly)
-        mm_split[[i]][mm_split[[i]][["level"]] == levels(data[[by_var]])[i], "estimate"] <- this_level_diff
-        mm_split[[i]][mm_split[[i]][["level"]] == levels(data[[by_var]])[i], "std.error"] <- this_level_se
-        
         # z-statistic
-        mm_split[[i]][["z"]] <- mm_split[[i]][["estimate"]]/mm_split[[i]][["std.error"]]
+        mm_split[[i]][["z"]] <- (mm_split[[i]][["estimate"]] - h0)/mm_split[[i]][["std.error"]]
         
         # p-value
-        mm_split[[i]][["p"]] <- 2L*(1L-stats::pnorm(abs(mm_split[[i]][["z"]])))
+        mm_split[[i]][["p"]] <- 2L * stats::pnorm(-abs(mm_split[[i]][["z"]]))
         
         # CIs
-        mm_split[[i]][["lower"]] <- mm_split[[i]][["estimate"]] - (stats::qnorm(1-alpha) * mm_split[[i]][["std.error"]])
-        mm_split[[i]][["upper"]] <- mm_split[[i]][["estimate"]] + (stats::qnorm(1-alpha) * mm_split[[i]][["std.error"]])
+        mm_split[[i]][["lower"]] <- mm_split[[i]][["estimate"]] - (stats::qnorm(1L - (alpha / 2L)) * mm_split[[i]][["std.error"]])
+        mm_split[[i]][["upper"]] <- mm_split[[i]][["estimate"]] + (stats::qnorm(1L - (alpha / 2L)) * mm_split[[i]][["std.error"]])
         
         # format output
         ## add column indicating value of 'by_var'

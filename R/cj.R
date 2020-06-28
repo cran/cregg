@@ -1,10 +1,11 @@
 #' @rdname cregg
+#' @importFrom utils hasName
 #' @export
 cj <-
 function(
   data,
   formula,
-  id = NULL,
+  id = ~ 0,
   weights = NULL,
   estimate = c("amce", "frequencies", "mm", "amce_differences", "mm_differences"),
   feature_order = NULL,
@@ -15,15 +16,26 @@ function(
 ) {
     estimate <- match.arg(estimate)
     
-    # coerce to "cj_df" to preserve attributes
-    data <- cj_df(data)
-    
     if (!is.null(by)) {
         # get RHS variables, variable labels, and factor levels
         RHS <- all.vars(stats::update(formula, 0 ~ . ))
         
         # get RHS variables, variable labels, and factor levels
         by_vars <- all.vars(stats::update(by, 0 ~ . ))
+        ## check `by` variables
+        for (b in by_vars) {
+            if (!utils::hasName(data, b)) {
+                stop(sprintf("Variable '%s' in `by` not found in 'data'", b))
+            }
+            # check that all variables in `by` are factors
+            if (utils::hasName(data, b) && !inherits(data[[b]], "factor")) {
+                stop(sprintf("Variable '%s' in `by` must be a factor", b))
+            }
+            # check for empty string values in by vars; error if present
+            if ("" %in% unique(data[[b]])) {
+                stop(sprintf("'by' variables cannot contain \"\" values (see '%s')", b))
+            }
+        }
         
         # process feature_order argument
         feature_order <- check_feature_order(feature_order, RHS)
@@ -79,6 +91,10 @@ function(
         
         # label features and levels
         out <- out[c("BY", "outcome", "statistic", "feature", "level", "estimate", "std.error", "z", "p", "lower", "upper", by_vars)]
+        # make sure factor levels match input
+        for (b in by_vars) {
+            out[[b]] <- factor(out[[b]], levels(data[[b]]))
+        }
         rownames(out) <- seq_len(nrow(out))
         
     } else {

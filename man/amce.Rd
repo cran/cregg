@@ -5,18 +5,26 @@
 \alias{amce_by_reference}
 \title{Tidy estimation of AMCEs}
 \usage{
-amce(data, formula, id = NULL, weights = NULL, feature_order = NULL,
-  feature_labels = NULL, level_order = c("ascending", "descending"),
-  alpha = 0.05, ...)
+amce(
+  data,
+  formula,
+  id = ~0,
+  weights = NULL,
+  feature_order = NULL,
+  feature_labels = NULL,
+  level_order = c("ascending", "descending"),
+  alpha = 0.05,
+  ...
+)
 
 amce_by_reference(data, formula, variable, ...)
 }
 \arguments{
 \item{data}{A data frame containing variables specified in \code{formula}. All RHS variables should be factors; the base level for each will be used in estimation and its reported AMCE will be NA (for printing). Optionally, this can instead be an object of class \dQuote{survey.design} returned by \code{\link[survey]{svydesign}}.}
 
-\item{formula}{A formula specifying an AMCE model to be estimated. All variables should be factors. Two-way interactions can be specified to handle constraints between factors in the design. These are detected automatically. Higher-order constraints are not allowed.}
+\item{formula}{A formula specifying an AMCE model to be estimated. All variables should be factors; all levels across features should be unique. Two-way constraints can be specified with an asterisk (*) between RHS features. The specific constrained level pairs within these features are then detected automatically. Higher-order constraints are not allowed.}
 
-\item{id}{An RHS formula specifying a variable holding respondent identifiers, to be used for clustering standard errors.}
+\item{id}{An RHS formula specifying a variable holding respondent identifiers, to be used for clustering standard errors. By default, data are unclustered.}
 
 \item{weights}{An (optional) RHS formula specifying a variable holding survey weights.}
 
@@ -33,15 +41,15 @@ amce_by_reference(data, formula, variable, ...)
 \item{variable}{An RHS formula containing a single factor variable from \code{formula}. This will be used by \code{amce_by_reference} to estimate AMCEs relative to each possible factor level as a reference category. If more than one RHS variables are specified, the first will be used.}
 }
 \value{
-A data frame
+A data frame of class \dQuote{cj_amce}
 }
 \description{
 Estimate AMCEs for a conjoint analysis and return a tidy data frame of results
 }
 \details{
-\code{amce} provides estimates of AMCEs (or rather, average marginal effects for each feature level). It does not calculate AMCEs for constrained conjoint designs. The function can also be used for balance testing by specifying a covariate rather outcome on the left-hand side of \code{formula}. See examples.
+\code{amce} provides estimates of AMCEs (or rather, average marginal effects for each feature level). Two-way constraints can be specified with an asterisk (*) between features. The specific constrained level pairs within these features are then detected automatically. The function can also be used for calculating average component interaction effects when combined with \code{interaction}, and for balance testing by specifying a covariate rather outcome on the left-hand side of \code{formula}. See examples.
 
-\code{amce_by_reference} provides a tool for quick sensitivity analysis. AMCEs are defined relative to an arbitrary reference category (i.e., feature level). This function will loop over all feature levels (for a specified feature) to show how interpretation will be affected by choice of reference category. The resulting data frame will be a stacked result from \code{amce}, containing an additional \code{BY} column specifying which level of \code{variable} was used as the reference category. In unconstrained conjoint designs, only AMCEs for \code{variable} will vary by reference category; in constrained designs, AMCEs for any factor constrained by \code{variable} may also vary.
+\code{amce_by_reference} provides a tool for quick sensitivity analysis. AMCEs are defined relative to an arbitrary reference category (i.e., feature level). This function will loop over all feature levels (for a specified feature) to show how interpretation will be affected by choice of reference category. The resulting data frame will be a stacked result from \code{amce}, containing an additional \code{REFERENCE} column specifying which level of \code{variable} was used as the reference category. In unconstrained conjoint designs, only AMCEs for \code{variable} will vary by reference category; in constrained designs, AMCEs for any factor constrained by \code{variable} may also vary.
 
 Users may desire to specify a \code{family} argument via \code{\dots}, which should be a \dQuote{family} object such as \code{gaussian}. Sensible alternatives are \code{binomial} (for binary outcomes) and quasibinomial (for weighted survey data). See \code{\link[stats]{family}} for details. In such cases, effects are always reported on the link (not outcome) scale.
 }
@@ -57,6 +65,11 @@ data("immigration")
 amce(immigration, ChosenImmigrant ~ Gender + ReasonForApplication * CountryOfOrigin,
      id = ~CaseID)
 
+# estimating average component interaction effects (AMCEs of feature combinations)
+immigration$language_entry <- interaction(immigration$LanguageSkills, 
+                                          immigration$PriorEntry, sep = "_")
+amce(immigration,ChosenImmigrant ~ language_entry, id = ~CaseID)
+
 # balance testing example
 plot(amce(immigration[!is.na(immigration$ethnocentrism),],
      ethnocentrism ~ Gender + Education + LanguageSkills, id = ~ CaseID))
@@ -65,7 +78,7 @@ plot(amce(immigration[!is.na(immigration$ethnocentrism),],
 x <- amce_by_reference(immigration, ChosenImmigrant ~ LanguageSkills + Education, 
        variable = ~ LanguageSkills, id = ~ CaseID)
 # plot
-plot(x, group = "BY")
+plot(x)
 }
 }
 \seealso{
